@@ -8,10 +8,12 @@
 #include "helpers.h"
 #include "json.hpp"
 
+using namespace std;
 // for convenience
 using nlohmann::json;
 using std::string;
 using std::vector;
+
 
 int main() {
   uWS::Hub h;
@@ -52,7 +54,7 @@ int main() {
 
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
                &map_waypoints_dx,&map_waypoints_dy]
-              (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+              (uWS::WebSocket<uWS::SERVER> *ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -104,30 +106,33 @@ int main() {
 
           auto msg = "42[\"control\","+ msgJson.dump()+"]";
 
-          ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+          ws->send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }  // end "telemetry" if
       } else {
         // Manual driving
         std::string msg = "42[\"manual\",{}]";
-        ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+        ws->send(msg.data(), msg.length(), uWS::OpCode::TEXT);
       }
     }  // end websocket if
   }); // end h.onMessage
 
-  h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
+  h.onConnection([&h](uWS::WebSocket<uWS::SERVER> *ws, uWS::HttpRequest req) {
     std::cout << "Connected!!!" << std::endl;
   });
 
-  h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code,
+  h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> *ws, int code,
                          char *message, size_t length) {
-    ws.close();
+    ws->close();
     std::cout << "Disconnected" << std::endl;
   });
 
   int port = 4567;
-  if (h.listen(port)) {
+  auto host = "127.0.0.1";
+  if (h.listen(host, port))
+  {
     std::cout << "Listening to port " << port << std::endl;
-  } else {
+  } else 
+  {
     std::cerr << "Failed to listen to port" << std::endl;
     return -1;
   }
