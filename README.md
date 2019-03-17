@@ -17,6 +17,9 @@ Each waypoint in the list contains  [x,y,s,dx,dy] values. x and y are the waypoi
 
 The highway's waypoints loop around so the frenet s value, distance along the road, goes from 0 to 6945.554.
 
+## Setup IDE Profile to Develop Natively in Windows with Visual Studio
+https://github.com/fkeidel/CarND-Term2-ide-profile-VisualStudio
+
 ## Basic Build Instructions
 
 1. Clone this repo.
