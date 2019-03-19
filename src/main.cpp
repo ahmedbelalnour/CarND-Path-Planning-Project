@@ -9,6 +9,10 @@
 #include "json.hpp"
 #include "spline.h"	/* for smoothing out the disjoint path that car following in the simulator https://kluge.in-chemnitz.de/opensource/spline/ */
 
+#define MIN_SPEED 0.2
+#define MAX_SPEED 49.5
+#define SPEED_STEP 0.23
+
 using namespace std;
 // for convenience
 using nlohmann::json;
@@ -53,16 +57,16 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
-  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
-               &map_waypoints_dx,&map_waypoints_dy]
+  // start in lane 1
+  int lane = 1;
+
+  // reference velocity
+  double ref_vel = MIN_SPEED; //mph
+
+  h.onMessage([&ref_vel, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
+               &map_waypoints_dx,&map_waypoints_dy, &lane]
               (uWS::WebSocket<uWS::SERVER> *ws, char *data, size_t length,
                uWS::OpCode opCode) {
-
-	  // start in lane 1
-	  int lane = 1;
-
-	  // reference velocity
-	  double ref_vel = 49.5; //mph
 	  
 	// "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -99,6 +103,66 @@ int main() {
           auto sensor_fusion = j[1]["sensor_fusion"];
 
 		  int prev_size = previous_path_x.size();
+
+		  //////////////////////////////////////////
+		  // Sensor fusion
+		  if (prev_size > 0)
+		  {
+			  car_s = end_path_s;
+		  }
+
+		  bool too_close = false;
+
+		  // Find ref_v to use
+		  for (int i = 0; i < sensor_fusion.size(); i++)
+		  {
+
+			  // Is care in my lane?
+			  float d = sensor_fusion[i][6];
+			  if (d < (2 + 4 * lane + 2) && d >(2 + 4 * lane - 2))
+			  {
+				  double vx = sensor_fusion[i][3];
+				  double vy = sensor_fusion[i][4];
+				  double check_speed = sqrt(vx * vx + vy * vy); // get speed magnitude from vx and vy
+				  double check_car_s = sensor_fusion[i][5];
+
+				  // Looking where other cars in the future
+				  check_car_s += ((double) prev_size * 0.02 * check_speed);
+				  // If using previous points can project s value out 
+				  // Check s values greater than mine and s gap
+				  // If other car s is greater than our car s "other car is infront of us", and the gap distance between other care s and our casr s is less than 30 menters "too close"
+				  if ((check_car_s > car_s) && ((check_car_s - car_s) < 30))
+				  {
+					  // Then we need to take some actions: like lower the speed so we don't crash in to the infront of us
+					  // We can raise a flag to try to change the lane
+					  too_close = true;
+				  }
+
+			  }
+
+		  }
+
+		  if (too_close)
+		  {
+			  std::cout << "in front car too close" << std::endl;
+			  if (ref_vel >= MIN_SPEED)
+			  {
+				  std::cout << "speed decreased by " << SPEED_STEP << std::endl;
+				  ref_vel -= SPEED_STEP; //mph
+			  }
+		  }
+		  else
+		  {
+			  // speed up back again if the in front car no longer too close
+			  std::cout << "in front car in safe space, drive with max speed" << std::endl;
+			  if ((ref_vel) <= MAX_SPEED)
+			  {
+				  std::cout << "speed increased by " << SPEED_STEP << std::endl;
+				  ref_vel += SPEED_STEP; //mph
+			  }
+		  }
+
+		  /////////////////////////////////////////
 
 		  double ref_x = car_x;
 		  double ref_y = car_y;

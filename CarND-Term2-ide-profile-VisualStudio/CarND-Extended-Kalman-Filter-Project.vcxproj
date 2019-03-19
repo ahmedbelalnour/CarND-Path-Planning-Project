@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="..\src\helpers.h" />
     <ClInclude Include="..\src\json.hpp" />
+    <ClInclude Include="..\src\spline.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\main.cpp" />
