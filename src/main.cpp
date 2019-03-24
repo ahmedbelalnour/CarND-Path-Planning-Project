@@ -136,6 +136,12 @@ int main() {
 					  // Then we need to take some actions: like lower the speed so we don't crash in to the infront of us
 					  // We can raise a flag to try to change the lane
 					  too_close = true;
+
+					  // Change lane
+					  if (lane > 0)
+					  {
+						  lane = 0;
+					  }
 				  }
 
 			  }
