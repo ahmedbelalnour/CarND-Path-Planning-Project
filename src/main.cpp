@@ -12,6 +12,12 @@
 #define MIN_SPEED 0.2
 #define MAX_SPEED 49.5
 #define SPEED_STEP 0.23
+#define FORWARD_GAP_DIST 30
+#define LEFT_LANE 0
+#define MIDDLE_LANE 1
+#define RIGHT_LANE 2
+
+
 
 using namespace std;
 // for convenience
@@ -66,8 +72,9 @@ int main() {
   h.onMessage([&ref_vel, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
                &map_waypoints_dx,&map_waypoints_dy, &lane]
               (uWS::WebSocket<uWS::SERVER> *ws, char *data, size_t length,
-               uWS::OpCode opCode) {
-	  
+               uWS::OpCode opCode) 
+  {
+	  int prev_lane = lane;
 	// "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -128,20 +135,14 @@ int main() {
 
 				  // Looking where other cars in the future
 				  check_car_s += ((double) prev_size * 0.02 * check_speed);
-				  // If using previous points can project s value out 
+				  // using previous points can project s value out 
 				  // Check s values greater than mine and s gap
 				  // If other car s is greater than our car s "other car is infront of us", and the gap distance between other care s and our casr s is less than 30 menters "too close"
-				  if ((check_car_s > car_s) && ((check_car_s - car_s) < 30))
+				  if ((check_car_s > car_s) && ((check_car_s - car_s) < FORWARD_GAP_DIST))
 				  {
 					  // Then we need to take some actions: like lower the speed so we don't crash in to the infront of us
 					  // We can raise a flag to try to change the lane
 					  too_close = true;
-
-					  // Change lane
-					  if (lane > 0)
-					  {
-						  lane = 0;
-					  }
 				  }
 
 			  }
@@ -150,20 +151,67 @@ int main() {
 
 		  if (too_close)
 		  {
-			  std::cout << "in front car too close" << std::endl;
+			  //std::cout << "in front car too close" << std::endl;
 			  if (ref_vel >= MIN_SPEED)
 			  {
-				  std::cout << "speed decreased by " << SPEED_STEP << std::endl;
+				  //std::cout << "speed decreased by " << SPEED_STEP << std::endl;
 				  ref_vel -= SPEED_STEP; //mph
 			  }
-		  }
+
+			  // Change lane
+			  if (lane == LEFT_LANE)
+			  {
+				  int target_lane = MIDDLE_LANE;
+				  bool is_safe = false;
+				  is_safe = is_target_lane_safe(target_lane, prev_size, car_s, sensor_fusion);
+				  if (is_safe)
+				  {
+					  lane = target_lane;
+				  }
+			  }
+			  
+			  else if (lane == RIGHT_LANE)
+			  {
+				  int target_lane = MIDDLE_LANE;
+				  bool is_safe = false;
+				  is_safe = is_target_lane_safe(target_lane, prev_size, car_s, sensor_fusion);
+				  if (is_safe)
+				  {
+					  lane = target_lane;
+				  }
+			  }
+			  else if (lane == MIDDLE_LANE)
+			  {
+				  int target_lane = LEFT_LANE;
+				  bool is_safe = false;
+				  is_safe = is_target_lane_safe(target_lane, prev_size, car_s, sensor_fusion);
+				  if (is_safe)
+				  {
+					  lane = target_lane;
+				  }
+				  
+				  if (is_safe == false)
+				  // if left lane is not safe, check if right lane is safe
+				  {
+					  target_lane = RIGHT_LANE;
+					  is_safe = is_target_lane_safe(target_lane, prev_size, car_s, sensor_fusion);
+					  if (is_safe)
+					  {
+						  lane = target_lane;
+					  }
+				  }
+
+			  }	// end of: if (lane == 1)
+
+			  std::cout << "Lane: " << lane << std::endl;
+		  }	// end of: if (too_close)
 		  else
 		  {
 			  // speed up back again if the in front car no longer too close
-			  std::cout << "in front car in safe space, drive with max speed" << std::endl;
+			  //std::cout << "in front car in safe space, drive with max speed" << std::endl;
 			  if ((ref_vel) <= MAX_SPEED)
 			  {
-				  std::cout << "speed increased by " << SPEED_STEP << std::endl;
+				  //std::cout << "speed increased by " << SPEED_STEP << std::endl;
 				  ref_vel += SPEED_STEP; //mph
 			  }
 		  }
@@ -208,7 +256,12 @@ int main() {
 			  ptsx.push_back(ref_x);
 			  ptsy.push_back(ref_y);
 		  }
-
+		  if (prev_lane != lane)
+		  {
+			  std::cout << "Waiting";
+			  for (int i = 0; i < 65000; i++);
+			  std::cout << "......" << std::endl;
+		  }
 		  // In Frenet add evenly 30m spaced points ahead of the starting reference
 		  vector<double> next_wp0 = getXY(car_s + 30, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
 		  vector<double> next_wp1 = getXY(car_s + 60, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
