@@ -151,9 +151,10 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
 {
 	int prev_wp = -1;
 
-	while (s > maps_s[prev_wp + 1] && (prev_wp < (int)(maps_s.size() - 1)))
+	while (s > maps_s[(prev_wp + 1) % maps_x.size()] && (prev_wp < (int)(maps_s.size() - 1)))
 	{
 		++prev_wp;
+		prev_wp = prev_wp % maps_x.size();
 	}
 	prev_wp = prev_wp % maps_x.size();
 	int wp2 = (prev_wp + 1) % maps_x.size();
@@ -178,18 +179,18 @@ bool is_target_lane_safe(const int target_lane, const int prev_size, const doubl
 {
 	bool safe_forward = true;
 	bool safe_backrward = true;
-	bool safe = false;
+	bool safe = true;
 	//std::cout << "is_lane_safe" << std::endl;
 	// check if right "middle lane" is safe
-	for (int lane_index = 0; lane_index < sensor_fusion.size(); lane_index++)
+	for (int index = 0; index < sensor_fusion.size(); index++)
 	{
-		float d = sensor_fusion[lane_index][6];
+		float d = sensor_fusion[index][6];
 		if (d < (2 + 4 * target_lane + 2) && d >(2 + 4 * target_lane - 2))
 		{
-			double vx = sensor_fusion[lane_index][3];
-			double vy = sensor_fusion[lane_index][4];
+			double vx = sensor_fusion[index][3];
+			double vy = sensor_fusion[index][4];
 			double check_speed = sqrt(vx * vx + vy * vy); // get speed magnitude from vx and vy
-			double check_car_s = sensor_fusion[lane_index][5];
+			double check_car_s = sensor_fusion[index][5];
 
 			// Looking where other cars in the future
 			check_car_s += ((double)prev_size * 0.02 * check_speed);
@@ -220,9 +221,9 @@ bool is_target_lane_safe(const int target_lane, const int prev_size, const doubl
 				std::cout << "safe_backrward: " << safe_backrward << std::endl;
 			}
 
-			if (safe_forward && safe_backrward)
+			if (!safe_forward || !safe_backrward)
 			{
-				safe = true;
+				safe = false;
 				break;
 			}
 		}
