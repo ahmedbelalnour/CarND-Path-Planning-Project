@@ -6,8 +6,8 @@
 #include <vector>
 
 #define M_PI       3.14159265358979323846   // pi
-#define FORWARD_SAFE_DISRANCE 35
-#define BACKWARD_SAFE_DISRANCE 25
+#define FORWARD_SAFE_DISRANCE 28
+#define BACKWARD_SAFE_DISRANCE 23
 // for convenience
 using std::string;
 using std::vector;
@@ -155,7 +155,7 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
 	{
 		++prev_wp;
 	}
-
+	prev_wp = prev_wp % maps_x.size();
 	int wp2 = (prev_wp + 1) % maps_x.size();
 
 	double heading = atan2((maps_y[wp2] - maps_y[prev_wp]),
@@ -206,6 +206,7 @@ bool is_target_lane_safe(const int target_lane, const int prev_size, const doubl
 				// Then we need to take some actions: like lower the speed so we don't crash in to the infront of us
 				// We can raise a flag to try to change the lane
 				safe_forward = false;
+				std::cout << "safe_forward: " << safe_forward << std::endl;
 			}
 			if(car_s > check_car_s)
 			{
@@ -216,11 +217,13 @@ bool is_target_lane_safe(const int target_lane, const int prev_size, const doubl
 				// Then we need to take some actions: like lower the speed so we don't crash in to the infront of us
 				// We can raise a flag to try to change the lane
 				safe_backrward = false;
+				std::cout << "safe_backrward: " << safe_backrward << std::endl;
 			}
 
 			if (safe_forward && safe_backrward)
 			{
 				safe = true;
+				break;
 			}
 		}
 	}	// end of: for loop
