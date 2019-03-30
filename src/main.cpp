@@ -12,7 +12,7 @@
 #define MIN_SPEED 0.2
 #define MAX_SPEED 49.5
 #define SPEED_STEP 0.23
-#define FORWARD_GAP_DIST 30
+#define FORWARD_GAP_DIST 25
 #define LEFT_LANE 0
 #define MIDDLE_LANE 1
 #define RIGHT_LANE 2
@@ -74,7 +74,7 @@ int main() {
               (uWS::WebSocket<uWS::SERVER> *ws, char *data, size_t length,
                uWS::OpCode opCode) 
   {
-	  int prev_lane = lane;
+	  static bool mid_lane_selector = false;
 	// "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -158,8 +158,8 @@ int main() {
 				  ref_vel -= SPEED_STEP; //mph
 			  }
 
-			  // Change lane
-			  if (lane == LEFT_LANE)
+			  // Change lane2
+			  if ((lane == LEFT_LANE) && (car_d < (2 + 4 * lane + 1) && car_d >(2 + 4 * lane - 1)))
 			  {
 				  int target_lane = MIDDLE_LANE;
 				  bool is_safe = false;
@@ -170,7 +170,7 @@ int main() {
 				  }
 			  }
 			  
-			  else if (lane == RIGHT_LANE)
+			  else if ((lane == RIGHT_LANE) && (car_d < (2 + 4 * lane + 1) && car_d >(2 + 4 * lane - 1)))
 			  {
 				  int target_lane = MIDDLE_LANE;
 				  bool is_safe = false;
@@ -180,9 +180,22 @@ int main() {
 					  lane = target_lane;
 				  }
 			  }
-			  else if (lane == MIDDLE_LANE)
+			  else if ((lane == MIDDLE_LANE) && (car_d < (2 + 4 * lane + 1) && car_d >(2 + 4 * lane - 1)))
 			  {
-				  int target_lane = LEFT_LANE;
+				  int target_lane = 0;
+				  std::cout << "mid_lane_selector: " << mid_lane_selector << std::endl;
+				  if (mid_lane_selector)
+				  {
+					  target_lane = RIGHT_LANE;
+					  mid_lane_selector = false;
+				  }
+				  else
+				  {
+					  target_lane = LEFT_LANE;
+					  mid_lane_selector = true;
+				  }
+				  std::cout << "mid_lane_selector: " << mid_lane_selector << std::endl;
+				  std::cout << "target_lane: " << target_lane << std::endl;
 				  bool is_safe = false;
 				  is_safe = is_target_lane_safe(target_lane, prev_size, car_s, sensor_fusion);
 				  if (is_safe)
@@ -190,16 +203,19 @@ int main() {
 					  lane = target_lane;
 				  }
 				  
+				  /*
 				  if (is_safe == false)
 				  // if left lane is not safe, check if right lane is safe
 				  {
 					  target_lane = RIGHT_LANE;
+					  left_lane_counter = 0;
 					  is_safe = is_target_lane_safe(target_lane, prev_size, car_s, sensor_fusion);
 					  if (is_safe)
 					  {
 						  lane = target_lane;
 					  }
 				  }
+				  */
 
 			  }	// end of: if (lane == 1)
 
@@ -256,12 +272,7 @@ int main() {
 			  ptsx.push_back(ref_x);
 			  ptsy.push_back(ref_y);
 		  }
-		  if (prev_lane != lane)
-		  {
-			  std::cout << "Waiting";
-			  for (int i = 0; i < 65000; i++);
-			  std::cout << "......" << std::endl;
-		  }
+
 		  // In Frenet add evenly 30m spaced points ahead of the starting reference
 		  vector<double> next_wp0 = getXY(car_s + 30, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
 		  vector<double> next_wp1 = getXY(car_s + 60, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
