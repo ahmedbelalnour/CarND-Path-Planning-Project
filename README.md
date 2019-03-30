@@ -10,15 +10,36 @@ sudo chmod u+x {simulator_file_name}
 ```
 
 ### Goals
-In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
+In this project the goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. 
+You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. 
+The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. 
+The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. 
+The car should be able to make one complete loop around the 6946m highway. 
+Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. 
+Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
+
+## Reflection
+The simulator provides the car and the surrounding environment data (Sensor fusion), so the application is doing the next steps to maneouver on the highway smoothly without collision:
+* Checking if there is a forward car on my currrent lane, and this forward car getting too close to my car, then we need to take some actions: like lower the speed so we don't crash in to the infront of us and prepare for lane changing by raising a `too_close` flag for example as in `main.cpp` line 145   
+* The highway in the simulator contains three lanes (left, middle, right), and in case the `too_close` flag is raised up, I select a target lane based on the current lane
+* for example if car is in the left lane or in the right lane, then the target lane is the middle lane. If the car is in the middel lane, I selected the target lane to be the right lane, and the right lane is not safe to change, I selected the left lane, and toggle this choice every time the car is in the middle lane, to avoid oscilation between the middle lane and right or left lane.
+* Then the target lane is passed to `is_target_lane_safe()` function which returns `false` if the vehicles in the target lane are too close to me and the distace between them less than the safe user defined forward and backword margin distance, otherwise it will return `true`.
+* If the target lane is not safe, the vihicle will not change the lane and only slow down and try again to check the surrounding lanes, otherwise it will change to the safe lane.
+* if there is no leading vehicles in the lane, the vihicle will speed up gradually to simulate comfort driving 
+
 
 #### The map of the highway is in data/highway_map.txt
-Each waypoint in the list contains  [x,y,s,dx,dy] values. x and y are the waypoint's map coordinate position, the s value is the distance along the road to get to that waypoint in meters, the dx and dy values define the unit normal vector pointing outward of the highway loop.
+Each waypoint in the list contains  [x, y, s, dx, dy] values. 
+* x and y are the waypoint's map coordinate position
+* s value is the distance along the road to get to that waypoint in meters
+* dx and dy values define the unit normal vector pointing outward of the highway loop.
 
 The highway's waypoints loop around so the frenet s value, distance along the road, goes from 0 to 6945.554.
 
+
 ## Setup IDE Profile to Develop Natively in Windows with Visual Studio
 https://github.com/fkeidel/CarND-Term2-ide-profile-VisualStudio
+
 
 ## Basic Build Instructions
 
